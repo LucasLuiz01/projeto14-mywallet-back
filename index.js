@@ -6,6 +6,7 @@ import cors from "cors";
 import joi from "joi";
 import bcrypt from "bcrypt";
 import {v4 as uuidV4} from "uuid";
+import dayjs from "dayjs";
 //Configuracoes iniciais
 const app = express();
 dotenv.config();
@@ -25,7 +26,7 @@ const loginSchena = joi.object({
 })
 const walletSchena = joi.object({
     valor: joi.number().required().min(1),
-    tipo: joi.string().required().min(3).valid("entrada", "saida"),
+    tipo: joi.boolean().required(),
     description: joi.string().required().min(3),
     email: joi.string().required().min(5).email(),
 })
@@ -92,7 +93,7 @@ app.post("/wallet", async(req, res) => {
         return res.status(409).send(err);
     }
     try{
-        await wallet.insertOne({description, tipo, valor, email});
+        await wallet.insertOne({description, tipo, valor, email, data: dayjs().format('DD/MM')});
        return res.status(201).send("Movimentacao gerada com sucesso");
     }catch(err){
         console.log(err);
@@ -113,8 +114,8 @@ app.get("/cadastro", async(req, res) => {
        return res.sendStatus(500);
     }
 });
-app.get("/cadastro", async(req, res) => {
-    const authorization = req.headers;
+app.get("/wallet", async(req, res) => {
+    const {authorization} = req.headers;
     const token = authorization?.replace('Bearer ', '')
     const user = await session.findOne({token})
     try{
