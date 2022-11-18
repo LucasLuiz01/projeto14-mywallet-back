@@ -26,6 +26,7 @@ const loginSchena = joi.object({
 const walletSchena = joi.object({
     valor: joi.number().required().min(1),
     tipo: joi.string().required().min(3).valid("entrada", "saida"),
+    description: joi.string().required().min(3),
     email: joi.string().required().min(5).email(),
 })
 
@@ -48,12 +49,15 @@ app.post("/login", async(req, res) => {
     if(validation.error){
         const erro = validation.error.details.map(detail => detail.message);
         console.log(erro);
-        res.status(409).send(erro);
+        return res.status(409).send(erro);
     }
-    try{
-        
-    }catch(err){
-        console.log(err);
+    const user = await login.findOne({email});
+    if(user && bcrypt.compareSync(senha, user.senha)){
+        const token = uuidV4();
+        await session.insertOne({email, token})
+        res.status(200).send(token);
+    }else {
+        return res.status(409).send("Usuario invalido");
     }
 });
 app.post("/cadastro", async(req, res) => {
@@ -80,7 +84,7 @@ app.post("/cadastro", async(req, res) => {
     }
 });
 app.post("/wallet", async(req, res) => {
-    const {email, tipo, valor} = req.body;
+    const {description, tipo, valor, email} = req.body;
    const validation = walletSchena.validate(req.body, {abortEarly: false})
     if(validation.error){
         const err = validation.error.details.map(detail => detail.message);
@@ -88,7 +92,7 @@ app.post("/wallet", async(req, res) => {
         return res.status(409).send(err);
     }
     try{
-        await wallet.insertOne({email, tipo, valor});
+        await wallet.insertOne({description, tipo, valor, email});
        return res.status(201).send("Movimentacao gerada com sucesso");
     }catch(err){
         console.log(err);
@@ -96,13 +100,25 @@ app.post("/wallet", async(req, res) => {
 });
 
 //GETS
-app.get("/wallet", async(req, res) => {
-    const email = req.headers.email;
-    if(!email){
-        return res.status(500).send("Envie um email");
-    }
+app.get("/cadastro", async(req, res) => {
+    const {authorization} = req.headers;
+    const token = authorization?.replace('Bearer ', '')
+    console.log(token)
+    const user = await session.findOne({token})
     try{
-        const movimentacao = await wallet.find({email}).toArray();
+        const usuario = await login.findOne({email: user.email});
+        return res.status(201).send(usuario);
+    }catch(err){
+        console.log(err);
+       return res.sendStatus(500);
+    }
+});
+app.get("/cadastro", async(req, res) => {
+    const authorization = req.headers;
+    const token = authorization?.replace('Bearer ', '')
+    const user = await session.findOne({token})
+    try{
+        const movimentacao = await wallet.find({email: user.email}).toArray();
         return res.status(201).send(movimentacao);
     }catch(err){
         console.log(err);
