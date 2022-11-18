@@ -5,8 +5,8 @@ import dotenv from "dotenv";
 import cors from "cors";
 import joi from "joi";
 import bcrypt from "bcrypt";
-import {v4 as uuidV4} from "uuid";
 import dayjs from "dayjs";
+import { logar, cadastro } from "./controllers/usuario.controller.js";
 //Configuracoes iniciais
 const app = express();
 dotenv.config();
@@ -15,12 +15,8 @@ app.use(express.json());
 //Variaveis Globais
 let db;
 //Erros Schema
-const cadastroSchena = joi.object({
+export const cadastroSchena = joi.object({
     nome: joi.string().required().min(3).max(25),
-    email: joi.string().required().min(5).email(),
-    senha: joi.string().required().min(3).max(25),
-})
-const loginSchena = joi.object({
     email: joi.string().required().min(5).email(),
     senha: joi.string().required().min(3).max(25),
 })
@@ -40,50 +36,12 @@ try{
 }
 db = mongoClient.db("MyWallet");
 //Collections
-const login = db.collection("usuario");
+export const login = db.collection("usuario");
 const wallet = db.collection("wallet");
-const session = db.collection("session");
+export const session = db.collection("session");
 //POSTS 
-app.post("/login", async(req, res) => {
-    const {email, senha} = req.body;
-    const validation = loginSchena.validate(req.body, {abortEarly: false})
-    if(validation.error){
-        const erro = validation.error.details.map(detail => detail.message);
-        console.log(erro);
-        return res.status(409).send(erro);
-    }
-    const user = await login.findOne({email});
-    if(user && bcrypt.compareSync(senha, user.senha)){
-        const token = uuidV4();
-        await session.insertOne({email, token})
-        res.status(200).send(token);
-    }else {
-        return res.status(409).send("Usuario invalido");
-    }
-});
-app.post("/cadastro", async(req, res) => {
-    const {nome, senha, email} = req.body;
-    const validation = cadastroSchena.validate(req.body, {abortEarly:false})
-   
-    if(validation.error){
-        const erro = validation.error.details.map(detail => detail.message);
-        console.log(erro);
-        return res.status(500).send(erro);
-    }
-    const validacao = await login.findOne({email});
-    if(validacao){
-        return res.status(409).send("Email já existente");
-    }
-
-    try{
-        const senhaCriptografada = bcrypt.hashSync(senha, 7);
-        console.log(senhaCriptografada);
-        await login.insertOne({nome, email, senha: senhaCriptografada});
-        res.status(201).send("Usúario Criado")
-    }catch(err){
-        console.log(err);
-    }
-});
+app.post("/login", logar);
+app.post("/cadastro", cadastro);
 app.post("/wallet", async(req, res) => {
     const {description, tipo, valor, email} = req.body;
    const validation = walletSchena.validate(req.body, {abortEarly: false})
