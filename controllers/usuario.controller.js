@@ -1,11 +1,7 @@
-import joi from "joi";
 import bcrypt from "bcrypt";
 import {v4 as uuidV4} from "uuid";
-import { login, session, cadastroSchena } from "../index.js";
-const loginSchena = joi.object({
-    email: joi.string().required().min(5).email(),
-    senha: joi.string().required().min(3).max(25),
-})
+import { login, session, cadastroSchena, loginSchena } from "../index.js";
+
 export async function logar (req, res) {
     const {email, senha} = req.body;
     const validation = loginSchena.validate(req.body, {abortEarly: false})
@@ -44,5 +40,19 @@ export async function cadastro (req, res)  {
         res.status(201).send("Usúario Criado")
     }catch(err){
         console.log(err);
+    }
+}
+export async function informacoes (req, res) {
+    const {authorization} = req.headers;
+    const token = authorization?.replace('Bearer ', '')
+    console.log(token)
+    const user = await session.findOne({token})
+    try{
+        const usuario = await login.findOne({email: user.email});
+        delete usuario.senha
+        return res.status(201).send(usuario);
+    }catch(err){
+        console.log(err);
+       return res.sendStatus(500);
     }
 }
