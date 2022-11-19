@@ -1,16 +1,9 @@
 import bcrypt from "bcrypt";
 import {v4 as uuidV4} from "uuid";
-import { cadastroSchena, loginSchena } from "../index.js";
 import { login, session } from "../database/db.js";
 
 export async function logar (req, res) {
     const {email, senha} = req.body;
-    const validation = loginSchena.validate(req.body, {abortEarly: false})
-    if(validation.error){
-        const erro = validation.error.details.map(detail => detail.message);
-        console.log(erro);
-        return res.status(409).send(erro);
-    }
     const user = await login.findOne({email});
     if(user && bcrypt.compareSync(senha, user.senha)){
         const token = uuidV4();
@@ -22,18 +15,6 @@ export async function logar (req, res) {
 }
 export async function cadastro (req, res)  {
     const {nome, senha, email} = req.body;
-    const validation = cadastroSchena.validate(req.body, {abortEarly:false})
-   
-    if(validation.error){
-        const erro = validation.error.details.map(detail => detail.message);
-        console.log(erro);
-        return res.status(500).send(erro);
-    }
-    const validacao = await login.findOne({email});
-    if(validacao){
-        return res.status(409).send("Email já existente");
-    }
-
     try{
         const senhaCriptografada = bcrypt.hashSync(senha, 7);
         console.log(senhaCriptografada);

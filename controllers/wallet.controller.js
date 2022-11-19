@@ -16,12 +16,6 @@ export async function carteira (req, res)  {
 
 export async function adicionandoMovimentacao(req, res) {
     const {description, tipo, valor, email} = req.body;
-   const validation = walletSchena.validate(req.body, {abortEarly: false})
-    if(validation.error){
-        const err = validation.error.details.map(detail => detail.message);
-        console.log(err);
-        return res.status(409).send(err);
-    }
     try{
         await wallet.insertOne({description, tipo, valor, email, data: dayjs().format('DD/MM')});
        return res.status(201).send("Movimentacao gerada com sucesso");
