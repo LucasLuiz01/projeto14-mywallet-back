@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import {v4 as uuidV4} from "uuid";
-import { login, session, cadastroSchena, loginSchena } from "../index.js";
+import { cadastroSchena, loginSchena } from "../index.js";
+import { login, session } from "../database/db.js";
 
 export async function logar (req, res) {
     const {email, senha} = req.body;

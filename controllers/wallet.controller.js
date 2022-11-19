@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
-import { wallet, session,walletSchena } from "../index.js";
+import {walletSchena } from "../index.js";
+import { wallet, session } from "../database/db.js";
 export async function carteira (req, res)  {
     const {authorization} = req.headers;
     const token = authorization?.replace('Bearer ', '')
